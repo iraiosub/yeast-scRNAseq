@@ -90,19 +90,35 @@ jobs:
           set -euo pipefail
 
           awk '
-            BEGIN { skip = 0 }
+            BEGIN { skip_separator = 0 }
             /^\| \*\*\*Status legend\*\*\*:/ {
               print ""
               print "\\noindent\\textit{Status legend:}\\quad `[OK]` working \\quad `[?]` unconfirmed / partial \\quad `[X]` broken"
-              skip = 1
+              skip_separator = 1
               next
             }
-            skip == 1 && /^\|---\|---\|---\|---\|/ {
-              skip = 0
+            skip_separator {
+              skip_separator = 0
               next
             }
-            skip == 0 { print }
+            { print }
           ' README._pdf.md > README._pdf.tmp && mv README._pdf.tmp README._pdf.md
+
+      - name: Verify protocol content remains in PDF input
+        run: |
+          set -euo pipefail
+          for section in \
+            "Cell growth and single-cell isolation" \
+            "Cell lysis and first-strand cDNA synthesis" \
+            "Library amplification and qPCR validation" \
+            "Tagmentation and single-stranded cDNA preparation" \
+            "Library quantification, sizing, and sequencing"
+          do
+            if ! grep -Fq "$section" README._pdf.md; then
+              echo "PDF input is missing protocol section: $section" >&2
+              exit 1
+            fi
+          done
 
       - name: Replace status tokens for PDF only
         run: |
