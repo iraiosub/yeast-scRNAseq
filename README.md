@@ -57,7 +57,7 @@ This protocol describes yeast single-cell RNA-seq (yscRNA-seq), from yeast cultu
 - **8.** Cover plates with an aluminum seal if they will not be processed immediately, or use a temporary plastic lid.
 - **9.** Quickly spin plates to collect cells at the bottom.
 - **10.** Let ethanol evaporate in a sterile environment (sterile hood) for a maximum of 45 minutes.
-- **11.** Once ethanol has completely evaporated, add 5 µL yeast cell lysis solution, spin down, and freeze immediately.
+- **11.** Once ethanol has completely evaporated, add 5 µL yeast cell lysis solution. The extracted source continues “of cell capturing solution and lysis”; **CHECK:** the relationship between these solution names is unclear. Spin down and freeze immediately.
 
 > **Note:** The source reports the same results when sorting cells directly into 5 µL of cell-capturing and lysis solution. If doing so, prepare plates immediately before sorting and keep them on ice at 4 °C.
 
@@ -74,7 +74,7 @@ Regardless of whether cells are sorted into ethanol or cell-capturing and lysis 
 | Zymolyase 100T (100 mg/mL) | 37340-57-1 | 0.6 |
 | RNase Inhibitor (40 U/mL) | 2313A | 0.12 |
 | RNase-nuclease-free H<sub>2</sub>O | 10977035 | 2.769 |
-| ERCC (1:1000,0000) (5000 molecules) | 4456740 | 0.081 |
+| ERCC (1:1000,0000) (5000 molecules; CHECK: dilution notation unclear) | 4456740 | 0.081 |
 | **Total** |  | **5** |
 
 ---
@@ -345,7 +345,7 @@ The source says this kit can be replaced by a preferred quantification method or
 ## Sequencing
 
 - **63.** Sequence the library on the HiSeq 2000 High Output using C1-P1-PCR-2 as the Read 1 primer and UMI-TN5-U as the Index read primer.
-- **64.** To run libraries on the HiSeq Rapid Run, use LNA primers. Spike in primer at 0.5 µM. Put Index 1 primer into HP8 (position 17) in the HiSeq, and Read 1 primer into HP9 (position 16) in the HiSeq. Double-check this information with the sequencing kit/instrument.
+- **64.** To run libraries on the HiSeq Rapid Run, use LNA primers. The source says, “Spike in at primer at 0.5 µM.” Put Index 1 primer into HP8 (position 17) in the HiSeq, and Read 1 primer into HP9 (position 16) in the HiSeq. Double-check this information with the sequencing kit/instrument.
 
 	- UMI_PCR_read1: `+GAATGA+TACGGCG+ACCA +CCGA+T` - custom 250 nmole DNA oligo, HPLC purification.
 	- Index1: `CTGT+CT+CTT+ATA+CA +CA+TCTGA+CG+C` - custom 250 nmole DNA oligo, HPLC purification.
@@ -414,11 +414,11 @@ The source says this kit can be replaced by a preferred quantification method or
 - Template version: 1.1.0 (`docs/template-metadata.yml`).
 - Migration date: 2026-10-12.
 - Formatting normalized: headings and list structure; time units expanded; unit spacing/capitalization and temperature spacing standardized; common chemical formulas use HTML subscripts; notes and warnings use blockquotes. Source reagent names, steps, order, quantities, conditions, and primer sequences were otherwise retained.
-- Source affiliations and the truncated category text “Yeast Protocols, Tools, a…” are not confidently mapped or complete; affiliation wording was kept as extracted.
+- **CHECK:** The authors’ numbered affiliations are not clearly mapped in the extracted source; affiliation wording was kept as extracted. The category text “Yeast Protocols, Tools, a…” is truncated.
 - Direct comparison against the original PDF was not possible in this environment because no PDF reader, renderer, or PDF Python package is installed. Source Markdown, source text, and all extracted images were reviewed. Check the flagged items below against the original PDF before using the protocol.
-- Image-based tables converted to Markdown: `yeast-single-cell-rna-seq-yscrna-seq-t29eqh6_-1-.pdf-0007-00.png` (library-amplification thermocycler program), `...-0012-02.png` (tagmentation mix), and `...-0016-08.png` plus `...-0017-00.png` (library-size PCR mix and total row).
-- Images retained: `...-0001-04.png` (yeast micrograph; source context is not explicit), `...-0010-01.png` (dscDNA expected result), and `...-0017-03.png` (final library expected result).
-- Images omitted as non-protocol page/access content: `...-0001-09.png` (profile icon), `...-0001-15.png` (Open Access mark), and `...-0001-16.png` (QR code; the DOI is also present as text). The source's account-creation text was also omitted as platform chrome.
+- Image-based tables converted to Markdown: `yeast-single-cell-rna-seq-yscrna-seq-t29eqh6_-1-.pdf-0007-00.png` (library-amplification thermocycler program), `yeast-single-cell-rna-seq-yscrna-seq-t29eqh6_-1-.pdf-0012-02.png` (tagmentation mix), and `yeast-single-cell-rna-seq-yscrna-seq-t29eqh6_-1-.pdf-0016-08.png` plus `yeast-single-cell-rna-seq-yscrna-seq-t29eqh6_-1-.pdf-0017-00.png` (library-size PCR mix and total row).
+- Images retained: `yeast-single-cell-rna-seq-yscrna-seq-t29eqh6_-1-.pdf-0001-04.png` (yeast micrograph; source context is not explicit), `yeast-single-cell-rna-seq-yscrna-seq-t29eqh6_-1-.pdf-0010-01.png` (dscDNA expected result), and `yeast-single-cell-rna-seq-yscrna-seq-t29eqh6_-1-.pdf-0017-03.png` (final library expected result).
+- Images omitted as non-protocol page/access content: `yeast-single-cell-rna-seq-yscrna-seq-t29eqh6_-1-.pdf-0001-09.png` (profile icon), `yeast-single-cell-rna-seq-yscrna-seq-t29eqh6_-1-.pdf-0001-15.png` (Open Access mark), and `yeast-single-cell-rna-seq-yscrna-seq-t29eqh6_-1-.pdf-0001-16.png` (QR code; the DOI is also present as text). The source's account-creation text was also omitted as platform chrome.
 - No other extracted image was left unclassified. No substantive protocol content was intentionally placed outside the mapped steps; `## Unplaced content` is empty.
 
 ## Unplaced content
