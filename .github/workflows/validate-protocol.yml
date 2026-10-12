@@ -1,0 +1,96 @@
+name: validate-protocol-README
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - README.md
+      - scripts/fix_protocol_style.py
+      - scripts/validate_protocol_content.py
+      - scripts/validate_protocol_style.py
+      - tests/test_fix_protocol_style.py
+      - tests/test_validate_protocol_content.py
+      - tests/test_validate_protocol_style.py
+      - .github/workflows/validate-protocol.yml
+      - .github/workflows/fix-protocol-style.yml
+  push:
+    branches:
+      - main
+    paths:
+      - README.md
+      - scripts/fix_protocol_style.py
+      - scripts/validate_protocol_content.py
+      - scripts/validate_protocol_style.py
+      - tests/test_fix_protocol_style.py
+      - tests/test_validate_protocol_content.py
+      - tests/test_validate_protocol_style.py
+      - .github/workflows/validate-protocol.yml
+      - .github/workflows/fix-protocol-style.yml
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Check whether README validation should run
+        id: validation_gate
+        run: |
+          set -euo pipefail
+          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
+            echo "should_validate=true" >> "$GITHUB_OUTPUT"
+            echo "Validation forced: workflow_dispatch always runs README validation."
+            exit 0
+          fi
+
+          if ! git rev-parse --verify HEAD^ >/dev/null 2>&1; then
+            echo "should_validate=false" >> "$GITHUB_OUTPUT"
+            echo "Validation skipped: no previous commit exists."
+            exit 0
+          fi
+
+          previous_commit="$(git rev-parse HEAD^)"
+
+          if git diff --quiet "$previous_commit" HEAD -- README.md; then
+            echo "should_validate=false" >> "$GITHUB_OUTPUT"
+            echo "Validation skipped: README.md is unchanged from the previous commit."
+            exit 0
+          fi
+
+          echo "should_validate=true" >> "$GITHUB_OUTPUT"
+
+      - name: Run validator tests
+        run: |
+          python -m unittest discover -s tests -p 'test_*.py'
+
+      - name: Run content validation
+        id: content_validation
+        if: steps.validation_gate.outputs.should_validate == 'true'
+        continue-on-error: true
+        run: |
+          python scripts/validate_protocol_content.py README.md
+
+      - name: Run style validation
+        id: style_validation
+        if: steps.validation_gate.outputs.should_validate == 'true'
+        continue-on-error: true
+        run: |
+          python scripts/validate_protocol_style.py README.md
+
+      - name: Fail if README validation failed
+        if: ${{ steps.validation_gate.outputs.should_validate == 'true' && (steps.content_validation.outcome != 'success' || steps.style_validation.outcome != 'success') }}
+        run: |
+          echo "README validation failed."
+          echo "Content validation outcome: ${{ steps.content_validation.outcome }}"
+          echo "Style validation outcome: ${{ steps.style_validation.outcome }}"
+          exit 1

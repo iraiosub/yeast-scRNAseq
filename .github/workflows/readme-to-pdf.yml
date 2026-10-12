@@ -1,0 +1,188 @@
+name: README-to-pdf
+
+on:
+  push:
+    branches:
+      - "**"
+    paths:
+      - README.md
+      - .github/workflows/readme-to-pdf.yml
+      - .github/workflows/pdf_header.tex
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: pandoc/latex:3.9.0.2-debian@sha256:1ee9b79d8e8d85e7b76b1c917b5eb5d3ff1ecb5d01f260e62dabe4fff18098cc
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify pinned PDF toolchain
+        run: |
+          set -euo pipefail
+          pandoc --version | head -n 1
+          xelatex --version | head -n 1
+
+          for package in fancyhdr hyperref framed xcolor; do
+            kpsewhich "${package}.sty" >/dev/null
+          done
+
+      - name: Prepare README._pdf.md
+        run: |
+          set -euo pipefail
+          cp README.md README._pdf.md
+
+      - name: Drop leading YAML front matter for PDF
+        run: |
+          set -euo pipefail
+          awk '
+            BEGIN { in_front_matter = 0 }
+            NR == 1 && /^---[[:space:]]*$/ {
+              in_front_matter = 1
+              next
+            }
+            in_front_matter && (/^---[[:space:]]*$/ || /^\.\.\.[[:space:]]*$/) {
+              in_front_matter = 0
+              next
+            }
+            in_front_matter { next }
+            { print }
+          ' README._pdf.md > README._pdf.tmp && mv README._pdf.tmp README._pdf.md
+
+      - name: Remove top template preamble for PDF
+        run: |
+          set -euo pipefail
+          awk '
+            BEGIN { started = 0 }
+            !started {
+              if (/^\[!\[/) next
+              if (/^> Template repository:/) next
+              if (/^[[:space:]]*$/) next
+              started = 1
+              print
+              next
+            }
+            { print }
+          ' README._pdf.md > README._pdf.tmp && mv README._pdf.tmp README._pdf.md
+
+      - name: Exclude migration notes from PDF
+        run: |
+          set -euo pipefail
+          awk '
+            /^# Migration notes$/ { exit }
+            { print }
+          ' README._pdf.md > README._pdf.tmp && mv README._pdf.tmp README._pdf.md
+
+      - name: Replace status legend table for PDF only
+        run: |
+          set -euo pipefail
+
+          awk '
+            BEGIN { skip = 0 }
+            /^\| \*\*\*Status legend\*\*\*:/ {
+              print ""
+              print "\\noindent\\textit{Status legend:}\\quad `[OK]` working \\quad `[?]` unconfirmed / partial \\quad `[X]` broken"
+              skip = 1
+              next
+            }
+            skip == 1 && /^\|---\|---\|---\|---\|/ {
+              skip = 0
+              next
+            }
+            skip == 0 { print }
+          ' README._pdf.md > README._pdf.tmp && mv README._pdf.tmp README._pdf.md
+
+      - name: Replace status tokens for PDF only
+        run: |
+          set -euo pipefail
+          sed \
+            -e 's/`\[OK\]`/\\OKstatus{}/g' \
+            -e 's/`\[\?\]`/\\WARNstatus{}/g' \
+            -e 's/`\[X\]`/\\FAILstatus{}/g' \
+            README._pdf.md > README._pdf.tmp && mv README._pdf.tmp README._pdf.md
+
+      - name: Render HTML subscripts for PDF only
+        run: |
+          set -euo pipefail
+          sed -E 's|<sub>([^<]+)</sub>|\\textsubscript{\1}|g' README._pdf.md > README._pdf.tmp && mv README._pdf.tmp README._pdf.md
+
+      - name: Create PDF metadata definitions
+        run: |
+          set -euo pipefail
+          sha_short="${GITHUB_SHA::7}"
+
+          cat > pdf-meta.tex <<EOF
+          \newcommand{\repoURL}{https://github.com/${GITHUB_REPOSITORY}}
+          \newcommand{\commitURL}{https://github.com/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA}}
+          \newcommand{\githash}{${sha_short}}
+          \newcommand{\gitactor}{\detokenize{${GITHUB_ACTOR}}}
+          EOF
+
+      - name: Convert README -> PDF
+        run: |
+          set -euo pipefail
+          repo_name="${GITHUB_REPOSITORY##*/}"
+
+          pandoc README._pdf.md \
+            -o "${repo_name}.pdf" \
+            --from=markdown-yaml_metadata_block \
+            --pdf-engine=xelatex \
+            -V colorlinks=true \
+            -V linkcolor=blue \
+            -V urlcolor=blue \
+            -H pdf-meta.tex \
+            -H .github/workflows/pdf_header.tex
+
+      - name: Upload PDF
+        uses: actions/upload-artifact@v4
+        with:
+          name: readme-pdf
+          path: "*.pdf"
+
+  commit:
+    runs-on: ubuntu-latest
+    needs: build
+    if: startsWith(github.ref, 'refs/heads/')
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.ref }}
+
+      - name: Download PDF
+        uses: actions/download-artifact@v4
+        with:
+          name: readme-pdf
+
+      - name: Commit PDF back to repo
+        run: |
+          set -euo pipefail
+          repo_name="${GITHUB_REPOSITORY##*/}"
+          branch_name="${GITHUB_REF_NAME}"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          if [ "$repo_name" != "protocol-template" ] && git ls-files --error-unmatch protocol-template.pdf >/dev/null 2>&1; then
+            git rm -f protocol-template.pdf
+          fi
+
+          git add "${repo_name}.pdf"
+          git diff --cached --quiet && exit 0
+          git commit -m "Update ${repo_name}.pdf"
+          git fetch origin "$branch_name"
+          git rebase "origin/$branch_name"
+          git push origin "HEAD:$branch_name"
